@@ -18,7 +18,7 @@ export default function RootLayout() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="FriendsProfile" component={FriendsProfileScreen} />
         </Stack.Navigator>
