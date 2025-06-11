@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { auth, db } from "../constants/firebaseConfig";
@@ -61,13 +61,52 @@ const RegisterScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.secondary, padding: SIZES.padding },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: COLORS.text },
-  input: { width: "100%", padding: 12, borderWidth: 1, borderColor: COLORS.textSecondary, borderRadius: SIZES.borderRadius, marginBottom: 10, backgroundColor: COLORS.white },
-  button: { backgroundColor: COLORS.primary, padding: 12, borderRadius: SIZES.borderRadius, width: "100%", alignItems: "center", marginTop: 10 },
-  buttonText: { color: COLORS.white, fontWeight: "bold" },
-  link: { color: COLORS.primary, marginTop: 10 },
-  error: { color: COLORS.error },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    padding: SIZES.padding,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 30,
+    color: COLORS.primary,
+  },
+  input: {
+    width: "100%",
+    padding: 15,
+    borderWidth: 1,
+    borderColor: COLORS.textSecondary,
+    borderRadius: SIZES.borderRadius,
+    marginBottom: 15,
+    backgroundColor: COLORS.white,
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: COLORS.primary,
+    padding: 15,
+    borderRadius: SIZES.borderRadius,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 15,
+  },
+  buttonText: {
+    color: COLORS.white,
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  link: {
+    color: COLORS.primary,
+    marginTop: 15,
+    fontSize: 16,
+  },
+  error: {
+    color: COLORS.error,
+    marginTop: 10,
+    fontSize: 16,
+  },
 });
 
 export default RegisterScreen;

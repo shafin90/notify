@@ -278,6 +278,12 @@ const ProfileScreen = ({ navigation }: any) => {
           >
             <MaterialIcons name="edit" size={24} color="#2E7D32" />
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <MaterialIcons name="settings" size={24} color="#333" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.profileSection}>
@@ -348,13 +354,9 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 40,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    justifyContent: 'flex-end',
+    padding: 16,
+    paddingTop: 48,
   },
   backButton: {
     padding: 5,
@@ -523,6 +525,9 @@ const styles = StyleSheet.create({
   },
   saveButtonTextWithLoader: {
     marginLeft: 8,
+  },
+  settingsButton: {
+    padding: 8,
   },
 });
 

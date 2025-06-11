@@ -108,7 +108,9 @@ const HomeScreen = ({ navigation }: any) => {
       </View>
 
       <FlatList
-        data={searchQuery ? searchResults : chatUsers}
+        data={searchQuery ? [...chatUsers, ...searchResults.filter(result => 
+          !chatUsers.some(chat => chat.id === result.id)
+        )] : chatUsers}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -121,7 +123,10 @@ const HomeScreen = ({ navigation }: any) => {
             />
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{item.name || "Unknown User"}</Text>
-              <Text style={styles.userEmail}>{item.lastMessage || `@${item.username}`}</Text>
+              <Text style={styles.userEmail}>
+                {item.lastMessage ? item.lastMessage : 
+                  searchQuery ? `@${item.username}` : `@${item.username}`}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
@@ -140,11 +145,11 @@ const HomeScreen = ({ navigation }: any) => {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.logoutButton, styles.button]} 
-          onPress={handleLogout}
+          style={[styles.settingsButton, styles.button]} 
+          onPress={() => navigation.navigate("Settings")}
         >
-          <MaterialIcons name="logout" size={22} color="#ffffff" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>Logout</Text>
+          <MaterialIcons name="settings" size={22} color="#ffffff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Settings</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -262,9 +267,9 @@ const styles = StyleSheet.create({
   profileButton: {
     backgroundColor: "#2E7D32", // Green
   },
-  logoutButton: {
-    backgroundColor: "#D32F2F", // Red
-  },
+  settingsButton: {
+    backgroundColor: "#1976D2", // Blue
+  }
 });
 
 export default HomeScreen;
