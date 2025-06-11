@@ -1,38 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, StatusBar, Modal } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db, auth } from "../constants/firebaseConfig";
-import { COLORS, SIZES } from "../constants/theme";
+import { MaterialIcons } from '@expo/vector-icons';
 
 const IMAGE_BB_API_KEY = "a237535b7fbf5b30479eaa33f84bc462"; // 🔥 Replace with your ImageBB API Key
 
-const ProfileScreen = ({ navigation }: any) => {
-  const user = auth.currentUser;
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [email, setEmail] = useState(user?.email || "");
-  const [profileImage, setProfileImage] = useState("");
+// Separate EditProfileModal component
+const EditProfileModal = ({ 
+  visible, 
+  onClose, 
+  initialData,
+  onSave,
+  isSaving
+}: { 
+  visible: boolean; 
+  onClose: () => void; 
+  initialData: {
+    name: string;
+    username: string;
+    bio: string;
+    profileImage: string;
+  };
+  onSave: (data: any) => void;
+  isSaving: boolean;
+}) => {
+  const [name, setName] = useState(initialData.name);
+  const [username, setUsername] = useState(initialData.username);
+  const [bio, setBio] = useState(initialData.bio);
+  const [profileImage, setProfileImage] = useState(initialData.profileImage);
   const [loading, setLoading] = useState(false);
 
-  // Fetch user data when screen loads
+  // Reset form when modal opens with new data
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setName(data.name || "");
-        setUsername(data.username || "");
-        setBio(data.bio || "");
-        setProfileImage(data.profileImage || "");
-      }
-    };
-
-    fetchUserData();
-  }, []);
+    if (visible) {
+      setName(initialData.name);
+      setUsername(initialData.username);
+      setBio(initialData.bio);
+      setProfileImage(initialData.profileImage);
+    }
+  }, [visible, initialData]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -65,59 +73,267 @@ const ProfileScreen = ({ navigation }: any) => {
       if (data.success) {
         setProfileImage(data.data.url);
       } else {
-        alert("Image upload failed");
+        Alert.alert("Error", "Image upload failed");
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Image upload failed");
+      Alert.alert("Error", "Image upload failed");
     }
     setLoading(false);
   };
 
-  const updateProfile = async () => {
-    if (!user) return;
-
-    // 🔥 Ensure username is unique
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("username", "==", username));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty && querySnapshot.docs[0].id !== user.uid) {
-      Alert.alert("Error", "Username already taken. Please choose another.");
-      return;
-    }
-
-    // 🔥 Update user profile
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, {
+  const handleSave = () => {
+    onSave({
       name,
       username,
       bio,
-      profileImage,
-      email, // 🔒 Email remains the same
-    }, { merge: true });
+      profileImage
+    });
+  };
 
-    alert("Profile updated successfully!");
-    navigation.navigate("Home")
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <TouchableOpacity onPress={onClose} disabled={isSaving}>
+              <MaterialIcons name="close" size={24} color={isSaving ? "#999" : "#333"} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalScroll}>
+            <View style={styles.profileSection}>
+              <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+                <Image 
+                  source={profileImage ? { uri: profileImage } : require("../assets/avatar-placeholder.png")} 
+                  style={styles.profileImage} 
+                />
+                <View style={styles.editIconContainer}>
+                  <MaterialIcons name="camera-alt" size={20} color="#fff" />
+                </View>
+                {loading && (
+                  <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#2E7D32" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Name</Text>
+                <View style={styles.inputWrapper}>
+                  <MaterialIcons name="person" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput 
+                    placeholder="Your name" 
+                    value={name} 
+                    onChangeText={setName} 
+                    style={styles.input}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Username</Text>
+                <View style={styles.inputWrapper}>
+                  <MaterialIcons name="alternate-email" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput 
+                    placeholder="Your username" 
+                    value={username} 
+                    onChangeText={setUsername} 
+                    style={styles.input}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Bio</Text>
+                <View style={styles.inputWrapper}>
+                  <MaterialIcons name="description" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput 
+                    placeholder="Tell us about yourself" 
+                    value={bio} 
+                    onChangeText={setBio} 
+                    style={[styles.input, styles.bioInput]}
+                    multiline
+                    numberOfLines={3}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <View style={styles.saveButtonContent}>
+                    <ActivityIndicator color="#ffffff" size="small" />
+                    <Text style={[styles.saveButtonText, styles.saveButtonTextWithLoader]}>Saving...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const ProfileScreen = ({ navigation }: any) => {
+  const user = auth.currentUser;
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
+  const [profileImage, setProfileImage] = useState("");
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch user data when screen loads
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user) return;
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setName(data.name || "");
+        setUsername(data.username || "");
+        setBio(data.bio || "");
+        setProfileImage(data.profileImage || "");
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleSaveProfile = async (data: any) => {
+    if (!user) return;
+    setIsSaving(true);
+
+    try {
+      // Check username uniqueness
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("username", "==", data.username));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty && querySnapshot.docs[0].id !== user.uid) {
+        Alert.alert("Error", "Username already taken. Please choose another.");
+        return;
+      }
+
+      // Update user profile
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, {
+        name: data.name,
+        username: data.username,
+        bio: data.bio,
+        profileImage: data.profileImage,
+        email,
+      }, { merge: true });
+
+      // Update local state
+      setName(data.name);
+      setUsername(data.username);
+      setBio(data.bio);
+      setProfileImage(data.profileImage);
+
+      Alert.alert("Success", "Profile updated successfully!");
+      setIsEditModalVisible(false);
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Edit Profile</Text>
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Profile</Text>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => setIsEditModalVisible(true)}
+          >
+            <MaterialIcons name="edit" size={24} color="#2E7D32" />
+          </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity onPress={pickImage}>
-        <Image source={profileImage ? { uri: profileImage } : require("../assets/avatar-placeholder.png")} style={styles.profileImage} />
-        {loading && <ActivityIndicator size="small" color={COLORS.primary} />}
-      </TouchableOpacity>
+        <View style={styles.profileSection}>
+          <Image 
+            source={profileImage ? { uri: profileImage } : require("../assets/avatar-placeholder.png")} 
+            style={styles.profileImage} 
+          />
+        </View>
 
-      <TextInput placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
-      <TextInput placeholder="Username" value={username} onChangeText={setUsername} style={styles.input} />
-      <TextInput placeholder="Bio" value={bio} onChangeText={setBio} style={styles.input} />
-      <TextInput placeholder="Email" value={email} style={styles.input} editable={false} /> {/* Email is non-editable */}
+        <View style={styles.infoContainer}>
+          <View style={styles.infoItem}>
+            <MaterialIcons name="person" size={24} color="#2E7D32" style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Name</Text>
+              <Text style={styles.infoValue}>{name || "Not set"}</Text>
+            </View>
+          </View>
 
-      <TouchableOpacity style={styles.button} onPress={updateProfile}>
-        <Text style={styles.buttonText}>Save Profile</Text>
-      </TouchableOpacity>
+          <View style={styles.infoItem}>
+            <MaterialIcons name="alternate-email" size={24} color="#2E7D32" style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Username</Text>
+              <Text style={styles.infoValue}>{username ? `@${username}` : "Not set"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoItem}>
+            <MaterialIcons name="description" size={24} color="#2E7D32" style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Bio</Text>
+              <Text style={styles.infoValue}>{bio || "No bio yet"}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoItem}>
+            <MaterialIcons name="email" size={24} color="#2E7D32" style={styles.infoIcon} />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{email}</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      <EditProfileModal 
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        initialData={{
+          name,
+          username,
+          bio,
+          profileImage
+        }}
+        onSave={handleSaveProfile}
+        isSaving={isSaving}
+      />
     </View>
   );
 };
@@ -125,43 +341,188 @@ const ProfileScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.secondary,
-    padding: SIZES.padding,
+    backgroundColor: "#ffffff",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingTop: 40,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  backButton: {
+    padding: 5,
+  },
+  editButton: {
+    padding: 5,
   },
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: COLORS.text,
+    fontWeight: "700",
+    color: "#333",
+  },
+  profileSection: {
+    alignItems: "center",
+    paddingVertical: 20,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "#2E7D32",
+  },
+  infoContainer: {
+    padding: 20,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  infoIcon: {
+    marginRight: 15,
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: '80%',
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  editIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#2E7D32",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: "#ffffff",
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formContainer: {
+    padding: 20,
+  },
+  inputGroup: {
     marginBottom: 20,
   },
-  input: {
-    width: "100%",
-    padding: 12,
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#f8f8f8",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-    borderRadius: SIZES.borderRadius,
-    marginBottom: 10,
-    backgroundColor: COLORS.white,
+    borderColor: "#e0e0e0",
   },
-  button: {
-    backgroundColor: COLORS.primary,
+  inputIcon: {
     padding: 12,
-    borderRadius: SIZES.borderRadius,
-    width: "100%",
-    alignItems: "center",
-    marginTop: 10,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontWeight: "bold",
+  input: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    color: "#333",
+  },
+  bioInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: "#2E7D32",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  saveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonTextWithLoader: {
+    marginLeft: 8,
   },
 });
 

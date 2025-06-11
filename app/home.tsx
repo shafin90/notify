@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, Alert } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, Alert, StatusBar } from "react-native";
 import { collection, query, where, getDocs, onSnapshot, orderBy } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { db, auth } from "../constants/firebaseConfig";
 import { COLORS, SIZES } from "../constants/theme";
+import { MaterialIcons } from '@expo/vector-icons';
 
 const HomeScreen = ({ navigation }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,16 +92,21 @@ const HomeScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chats</Text>
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
+      <View style={styles.header}>
+        <Text style={styles.title}>Chats</Text>
+      </View>
 
-      <TextInput
-        placeholder="Search by email or username"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        style={styles.input}
-      />
+      <View style={styles.searchContainer}>
+        <TextInput
+          placeholder="Search by email or username"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.input}
+          placeholderTextColor="#666"
+        />
+      </View>
 
-      {/* Show search results if searching, otherwise show chat history */}
       <FlatList
         data={searchQuery ? searchResults : chatUsers}
         keyExtractor={(item) => item.id}
@@ -113,25 +119,34 @@ const HomeScreen = ({ navigation }: any) => {
               source={item.profileImage ? { uri: item.profileImage } : require("../assets/avatar-placeholder.png")}
               style={styles.profileImage}
             />
-            <View>
+            <View style={styles.userInfo}>
               <Text style={styles.userName}>{item.name || "Unknown User"}</Text>
               <Text style={styles.userEmail}>{item.lastMessage || `@${item.username}`}</Text>
             </View>
           </TouchableOpacity>
         )}
+        contentContainerStyle={styles.listContainer}
       />
 
       {loading && <Text style={styles.loadingText}>Loading...</Text>}
 
-      {/* My Profile Button */}
-      <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate("Profile")}>
-        <Text style={styles.profileButtonText}>Go to My Profile</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[styles.profileButton, styles.button]} 
+          onPress={() => navigation.navigate("Profile")}
+        >
+          <MaterialIcons name="person" size={22} color="#ffffff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Profile</Text>
+        </TouchableOpacity>
 
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.logoutButton, styles.button]} 
+          onPress={handleLogout}
+        >
+          <MaterialIcons name="logout" size={22} color="#ffffff" style={styles.buttonIcon} />
+          <Text style={styles.buttonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -139,73 +154,116 @@ const HomeScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
-    padding: SIZES.padding,
+    backgroundColor: "#ffffff",
+  },
+  header: {
+    padding: 20,
+    paddingTop: 40,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#2E7D32", // Dark green
+  },
+  searchContainer: {
+    padding: 15,
+    backgroundColor: "#ffffff",
   },
   input: {
     width: "100%",
-    padding: 12,
+    padding: 15,
     borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-    borderRadius: SIZES.borderRadius,
-    marginBottom: 10,
-    backgroundColor: COLORS.white,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
+    backgroundColor: "#f8f8f8",
+    fontSize: 16,
+    color: "#333",
+  },
+  listContainer: {
+    padding: 15,
   },
   userItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderRadius: SIZES.borderRadius,
-    marginBottom: 8,
+    backgroundColor: "#ffffff",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  userInfo: {
+    flex: 1,
   },
   userName: {
     fontSize: 16,
-    color: COLORS.text,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: "#666",
   },
   loadingText: {
     textAlign: "center",
     marginTop: 10,
-    color: COLORS.textSecondary,
+    color: "#666",
+    fontSize: 16,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: "#ffffff",
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    gap: 10,
+  },
+  button: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  buttonIcon: {
+    marginRight: 6,
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 15,
   },
   profileButton: {
-    backgroundColor: COLORS.primary,
-    padding: 12,
-    borderRadius: SIZES.borderRadius,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  profileButtonText: {
-    color: COLORS.white,
-    fontWeight: "bold",
+    backgroundColor: "#2E7D32", // Green
   },
   logoutButton: {
-    backgroundColor: COLORS.error,
-    padding: 12,
-    borderRadius: SIZES.borderRadius,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  logoutButtonText: {
-    color: COLORS.white,
-    fontWeight: "bold",
+    backgroundColor: "#D32F2F", // Red
   },
 });
 
